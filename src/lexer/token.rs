@@ -10,6 +10,21 @@ pub struct Position {
     src: &str,
 }
 
+impl Position {
+    // Some basic getters for each property.
+    pub fn index(&self) -> u32 {
+        self.index
+    }
+
+    pub fn len(&self) -> u32 {
+        self.len
+    }
+
+    pub fn src(&self) -> &str {
+        self.src
+    }
+}
+
 /// Tokens produced by the lexer.
 /// Every token stores at least a position.
 pub enum Token {
