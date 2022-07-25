@@ -4,6 +4,7 @@ use super::result::LexResult;
 use crate::utils::general::is_some_and;
 
 struct Lexer<'a> {
+    filename: &'a str,
     src: &'a str,
     chars: Vec<char>,
     index: usize,
@@ -11,10 +12,11 @@ struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    fn new(src: &'a str) -> Self {
+    fn new(filename: &'a str, src: &'a str) -> Self {
         let chars: Vec<char> = src.chars().collect();
         let current = Some(chars[0]);
         Self {
+            filename,
             src,
             chars,
             index: 0,
@@ -23,7 +25,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Steps to the next character in the source code.
-    fn advance_once(&mut self) {
+    fn advance(&mut self) {
         self.index += 1;
         self.current = if self.index < self.chars.len() {
             Some(self.chars[self.index])
@@ -34,12 +36,9 @@ impl<'a> Lexer<'a> {
 
     /// Steps to the next character in the source code
     /// and skips whitespace
-    fn advance(&mut self) {
-        loop {
-            self.advance_once();
-            if !is_some_and(&self.current, |x| x.is_whitespace()) {
-                break;
-            }
+    fn skip_whitespace(&mut self) {
+        while is_some_and(&self.current, |x| x.is_whitespace()) {
+            self.advance();
         }
     }
 
@@ -95,8 +94,8 @@ impl<'a> Lexer<'a> {
             if c == '.' {
                 // If the number is also hexadecimal, uh oh!
                 if is_hex {
-                    return LexResult::Err("NumberFormat".to_string(), "
-                        Hex number cannot be a float.".to_string(), self.pos(self.index));
+                    return LexResult::Err("NumberFormat".to_string(), 
+                        "Hex number cannot be a float.".to_string(), self.pos(self.index));
                 }
                 dots += 1;
                 // If there's a decimal point, it must be a floating point number!
@@ -143,7 +142,12 @@ impl<'a> Lexer<'a> {
     /// Returns a position object ranging from a given 
     /// start index to the current character
     fn pos(&self, index: usize) -> Position<'a> {
-        Position::new(index, self.index - index, self.src)
+        let len = if index < self.index {
+            0
+        } else {
+            self.index - index
+        };
+        Position::new(index, len, self.src, self.filename)
     }
 
     /// Returns a LexResult::Ok of the token and advances to
@@ -178,6 +182,7 @@ impl<'a> Lexer<'a> {
         let mut tokens = Vec::new();
         // While the current character exists (not end of file)
         while self.current.is_some() {
+            self.skip_whitespace();
             // Attempt to lex a token
             let res = self.gather_token();
             match res {
@@ -193,7 +198,7 @@ impl<'a> Lexer<'a> {
 }
 
 /// Takes in source code and creates tokens from it
-pub fn lex<'a>(src: &'a str) -> LexResult<'a, Vec<Token<'a>>> {
-    let mut lexer = Lexer::new(src);
+pub fn lex<'a>(filename: &'a str, src: &'a str) -> LexResult<'a, Vec<Token<'a>>> {
+    let mut lexer = Lexer::new(filename, src);
     lexer.lex()
 }
