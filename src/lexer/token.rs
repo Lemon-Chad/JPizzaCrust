@@ -6,22 +6,22 @@ use std::fmt;
 /// and len indicates how many characters
 /// the selection spans.
 pub struct Position<'a> {
-    index: u32,
-    len: u32,
+    index: usize,
+    len: usize,
     src: &'a str,
 }
 
 impl<'a> Position<'a> {
-    pub fn new(index: u32, len: u32, src: &'a str) -> Self {
+    pub fn new(index: usize, len: usize, src: &'a str) -> Self {
         Position { index, len, src }
     }
 
     // Some basic getters for each property.
-    pub fn index(&self) -> u32 {
+    pub fn index(&self) -> usize {
         self.index
     }
 
-    pub fn len(&self) -> u32 {
+    pub fn len(&self) -> usize {
         self.len
     }
 
@@ -44,12 +44,20 @@ pub enum Token<'a> {
     Minus(Position<'a>),
     Star(Position<'a>),
     Slash(Position<'a>),
-    Number(Position<'a>, i32),
+    Int(Position<'a>, i64),
+    Float(Position<'a>, f64),
 }
 
 impl<'a> fmt::Display for Token<'a> {
     // Simply writes token as debug for to_string
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", match self {
+            Self::Plus(_) => "+".to_string(),
+            Self::Minus(_) => "-".to_string(),
+            Self::Star(_) => "*".to_string(),
+            Self::Slash(_) => "/".to_string(),
+            Self::Int(_, n) => n.to_string(),
+            Self::Float(_, n) => format!("{}f", n),
+        })
     }
 }
