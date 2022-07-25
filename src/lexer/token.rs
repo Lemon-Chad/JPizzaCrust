@@ -1,7 +1,7 @@
 use std::fmt;
 
 /// Stores the position of something in 
-/// a string (src).
+/// a string (src, filename).
 /// Index indicates the starting character's index,
 /// and len indicates how many characters
 /// the selection spans.
@@ -9,11 +9,12 @@ pub struct Position<'a> {
     index: usize,
     len: usize,
     src: &'a str,
+    filename: &'a str,
 }
 
 impl<'a> Position<'a> {
-    pub fn new(index: usize, len: usize, src: &'a str) -> Self {
-        Position { index, len, src }
+    pub fn new(index: usize, len: usize, src: &'a str, filename: &'a str) -> Self {
+        Position { index, len, src, filename }
     }
 
     // Some basic getters for each property.
@@ -27,6 +28,10 @@ impl<'a> Position<'a> {
 
     pub fn src(&self) -> &str {
         self.src
+    }
+
+    pub fn filename(&self) -> &str {
+        self.filename
     }
 }
 
