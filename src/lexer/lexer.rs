@@ -11,6 +11,10 @@ struct Lexer<'a> {
     current: Option<char>,
 }
 
+const KEYWORDS: &'static [&'static str] = &[
+    "let"
+];
+
 impl<'a> Lexer<'a> {
     fn new(filename: &'a str, src: &'a str) -> Self {
         let chars: Vec<char> = src.chars().collect();
@@ -43,7 +47,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Lexes an identifier or keyword
-    fn identifier(&mut self) -> String {
+    fn identifier(&mut self, index: usize) -> Token<'a> {
         let mut ident = String::new();
         while let Some(c) = self.current {
             if !c.is_alphanumeric() {
@@ -53,7 +57,11 @@ impl<'a> Lexer<'a> {
             ident.push(c);
             self.advance();
         }
-        ident
+        if KEYWORDS.contains(&ident.as_str()) {
+            Token::Keyword(self.pos(index), ident)
+        } else {
+            Token::Identifier(self.pos(index), ident)
+        }
     }
 
     /// Lexes a number token
@@ -168,6 +176,8 @@ impl<'a> Lexer<'a> {
                 '/' => self.tok(Token::Slash(self.pos(index))),
                 // If it's a number, generate number token
                 _ if c.is_numeric() => self.number(index),
+                // If it's a letter, generate an identifier token
+                _ if c.is_alphabetic() => LexResult::Ok(self.identifier(index)),
                 // Otherwise, unknown token
                 _ => LexResult::Err("UnknownToken".to_string(), "Unknown symbol or token".to_string(),
                     self.pos(index)),

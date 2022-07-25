@@ -3,7 +3,7 @@ mod utils;
 use utils::logging;
 
 fn main() {
-    let demo_code = "0x234.";
+    let demo_code = "let test 0xABCD";
     let result = lexer::lexer::lex("demo_code", demo_code);
     logging::println(&format!("Demo code: {}", demo_code));
     if let lexer::result::LexResult::Ok(tokens) = result {

@@ -51,6 +51,8 @@ pub enum Token<'a> {
     Slash(Position<'a>),
     Int(Position<'a>, i64),
     Float(Position<'a>, f64),
+    Identifier(Position<'a>, String),
+    Keyword(Position<'a>, String),
 }
 
 impl<'a> fmt::Display for Token<'a> {
@@ -63,6 +65,8 @@ impl<'a> fmt::Display for Token<'a> {
             Self::Slash(_) => "/".to_string(),
             Self::Int(_, n) => n.to_string(),
             Self::Float(_, n) => format!("{}f", n),
+            Self::Identifier(_, ident) => ident.to_string(),
+            Self::Keyword(_, keyword) => format!("KEYWORD:{}", keyword),
         })
     }
 }
