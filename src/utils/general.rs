@@ -19,15 +19,6 @@ pub fn line_of(src: &str, index: usize) -> usize {
     src[0..=index].matches('\n').count()
 }
 
-// Get the index of the nearest newline character
-pub fn nearest_line_index(src: &str, index: usize) -> usize {
-    src[0..=index]
-        .match_indices('\n')
-        .map(|(index, _)| index)
-        .last()
-        .unwrap_or(0)
-}
-
 pub fn underline_selection(pos: &Position) -> String {
     // Determines the underline characters
     // based on whether or not UTF-8 can be used.
