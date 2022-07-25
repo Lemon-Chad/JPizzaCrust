@@ -1,7 +1,7 @@
 
 use super::token::{ Token, Position };
 use super::result::LexResult;
-use super::super::utils;
+use crate::utils::general::is_some_and;
 
 struct Lexer<'a> {
     src: &'a str,
@@ -37,7 +37,7 @@ impl<'a> Lexer<'a> {
     fn advance(&mut self) {
         loop {
             self.advance_once();
-            if !utils::is_some_and(&self.current, |x| x.is_whitespace()) {
+            if !is_some_and(&self.current, |x| x.is_whitespace()) {
                 break;
             }
         }
@@ -58,15 +58,49 @@ impl<'a> Lexer<'a> {
     }
 
     /// Lexes a number token
-    fn number(&mut self, index: usize) -> Token<'a> {
+    fn number(&mut self, index: usize) -> LexResult<'a, Token<'a>> {
         let mut num = String::new();
         let mut dots = 0;
+        let mut is_float = false;
+        let mut is_hex = false;
         while let Some(c) = self.current {
-            if !c.is_numeric() && c != '.' {
+            // Hellish method to get lowercase character.
+            let lowercase_c = c.to_lowercase().next().unwrap();
+            // If the number ends with 'f', then it's a float.
+            if lowercase_c == 'f' && !is_hex {
+                is_float = true;
+                self.advance();
                 break;
             }
+            // If there's an x, it might be hex!
+            if lowercase_c == 'x' && !is_hex {
+                // If the number is not a 0, it's not hex
+                // Format for hex is 0xABCD so the only character preceding it should be a 0
+                if num != "0" {
+                    break;
+                }
+                is_hex = true;
+                self.advance();
+                // Reset number string because 0x causes a formatting error.
+                num = String::new();
+                continue;
+            }
+            // If it's not a number or a dot
+            // and if it's hexadecimal but not in the character range
+            // then break.
+            if (!('a'..='f').contains(&lowercase_c) || !is_hex) && !c.is_numeric() && c != '.' {
+                break;
+            }
+            // Search for decimal points
             if c == '.' {
+                // If the number is also hexadecimal, uh oh!
+                if is_hex {
+                    return LexResult::Err("NumberFormat".to_string(), "
+                        Hex number cannot be a float.".to_string(), self.pos(self.index));
+                }
                 dots += 1;
+                // If there's a decimal point, it must be a floating point number!
+                is_float = true;
                 // If there is more than 1 dot (eg 12.34.) then break
                 if dots > 1 {
                     break;
@@ -76,16 +110,34 @@ impl<'a> Lexer<'a> {
             num.push(c);
             self.advance();
         }
-        // Parse number string as i64 if there is no decimal point
-        // Force unwrap because if it crashes, the lexer is broken
-        if dots == 0 {
-            let n = num.parse::<i64>().unwrap();
-            Token::Int(self.pos(index), n)
-        } else {
-            // Otherwise do same with f64
-            let n = num.parse::<f64>().unwrap();
-            Token::Float(self.pos(index), n)
+
+        // If the last character is a dot, then that's a syntax error.
+        if is_some_and(&num.chars().last(), |x| *x == '.') {
+            return LexResult::Err("NumberFormat".to_string(), 
+                "Expected number after decimal point.".to_string(), self.pos(self.index));
         }
+
+        // If there's no number then uhhh oh no!!
+        if num.len() == 0 {
+            return LexResult::Err("NumberFormat".to_string(), 
+                "Expected number.".to_string(), self.pos(self.index));
+        }
+
+        // Parse number string as f64 if it is a float
+        // Force unwrap because if it crashes, the lexer is broken
+        LexResult::Ok(if is_float {
+            let n: f64 = num.parse().unwrap();
+            Token::Float(self.pos(index), n)
+        } else {
+            // Otherwise do same with i64
+            let n: i64 = if is_hex {
+                // If it's hexadecimal, parse in base 16.
+                i64::from_str_radix(&num, 16).unwrap()
+            } else {
+                num.parse().unwrap()
+            };
+            Token::Int(self.pos(index), n)
+        })
     }
 
     /// Returns a position object ranging from a given 
@@ -111,7 +163,7 @@ impl<'a> Lexer<'a> {
                 '*' => self.tok(Token::Star(self.pos(index))),
                 '/' => self.tok(Token::Slash(self.pos(index))),
                 // If it's a number, generate number token
-                _ if c.is_numeric() => LexResult::Ok(self.number(index)),
+                _ if c.is_numeric() => self.number(index),
                 // Otherwise, unknown token
                 _ => LexResult::Err("UnknownToken".to_string(), "Unknown symbol or token".to_string(),
                     self.pos(index)),
