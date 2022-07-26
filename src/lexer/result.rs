@@ -1,7 +1,6 @@
 
 use super::token::Position;
-use std::fmt;
-use std::fmt::{ Display, Formatter };
+use std::fmt::{ self, Display, Formatter };
 use crate::utils::general as utils;
 
 /// Result that either returns a lexer error or a value.

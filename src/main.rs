@@ -1,4 +1,6 @@
 mod lexer;
+mod parser;
+mod types;
 mod utils;
 use utils::logging;
 

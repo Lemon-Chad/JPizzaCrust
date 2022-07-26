@@ -1,4 +1,5 @@
-use std::fmt;
+use std::fmt::{ self, Display, Formatter };
+use std::cmp::{ min, max };
 
 /// Stores the position of something in 
 /// a string (src, filename).
@@ -15,6 +16,14 @@ pub struct Position<'a> {
 impl<'a> Position<'a> {
     pub fn new(index: usize, len: usize, src: &'a str, filename: &'a str) -> Self {
         Position { index, len, src, filename }
+    }
+
+    /// Allows you to add two positions together to get
+    /// the area covered by both
+    pub fn extend(&self, other: &Position<'a>) -> Position<'a> {
+        let index = min(other.index, self.index);
+        let len = max(self.index + self.len, other.index + other.len) - index;
+        Position::new(index, len, self.src, self.filename)
     }
 
     // Some basic getters for each property.
@@ -55,9 +64,9 @@ pub enum Token<'a> {
     Keyword(Position<'a>, String),
 }
 
-impl<'a> fmt::Display for Token<'a> {
+impl<'a> Display for Token<'a> {
     // Simply writes token as debug for to_string
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "{}", match self {
             Self::Plus(_) => "+".to_string(),
             Self::Minus(_) => "-".to_string(),
